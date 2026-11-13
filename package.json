@@ -11,7 +11,8 @@
     "build": "tsc",
     "start": "tsx",
     "flights": "tsx src/flights.ts",
-    "flights-bugs": "tsx src/flights-bugs.ts"
+    "flights-bugs": "tsx src/flights-bugs.ts",
+    "my": "tsx src/my.ts"
   },
   "keywords": [],
   "author": "",
