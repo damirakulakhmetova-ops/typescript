@@ -12,7 +12,8 @@
     "start": "tsx",
     "flights": "tsx src/flights.ts",
     "flights-bugs": "tsx src/flights-bugs.ts",
-    "my": "tsx src/my.ts"
+    "my": "tsx src/my.ts",
+    "model": "tsx src/model.ts"
   },
   "keywords": [],
   "author": "",
