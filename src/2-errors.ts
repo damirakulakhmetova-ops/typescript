@@ -5,6 +5,6 @@ function greet(name: string, city?: string): string {
   return city ? `Привет, ${name} из города ${city}!` : `Привет, ${name}!`;
 }
 
-add(2, "3");
-greet();
-const total: string = add(1, 2);
+add(2, 3);
+greet("Damira");
+const total: number = add(1, 2);
