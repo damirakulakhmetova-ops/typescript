@@ -15,7 +15,12 @@ function getCoursePrice(basePrice: number, isInstallment: boolean): number {
 
 // Стоимость одной заявки из рекламы: бюджет за месяц делим на количество заявок.
 function getCostPerLead(budget: number, leads: number): number {
-  return budget / leads;
+  // Если заявок нет, делить нельзя — сообщаем об ошибке
+  if (leads <= 0) {
+    throw new Error("Количество заявок должно быть больше нуля");
+  }
+  // Округляем до целых тенге, как и цену курса
+  return Math.round(budget / leads);
 }
 
 // Примеры
@@ -24,3 +29,4 @@ const BASE_PRICE = 180_000;
 console.log("Цена без рассрочки:", getCoursePrice(BASE_PRICE, false)); // 180000
 console.log("Цена в рассрочку:", getCoursePrice(BASE_PRICE, true)); // 207000
 console.log("Стоимость одной заявки:", getCostPerLead(150_000, 50)); // 3000
+console.log("Стоимость заявки с округлением:", getCostPerLead(100_000, 3)); // 33333
