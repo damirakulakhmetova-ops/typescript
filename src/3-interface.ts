@@ -8,6 +8,9 @@ interface Task {
 const tasks: Task[] = [
   { id: 1, title: "Сделать ДЗ по Git", done: true },
   { id: 2, title: "Повторить типы", done: false, deadline: "11.11" },
+  { id: 3, title: "Сдать ДЗ 4", done: false },
+  { id: 4, title: "Сдать ДЗ 5", done: false },
+  { id: 5, title: "Подать заявку на DevShow", done: false },
 ];
 
 function addTask(list: Task[], title: string): Task {
@@ -29,4 +32,4 @@ function pending(list: Task[]): Task[] {
 
 addTask(tasks, "Посмотреть запись урока");
 completeTask(tasks, 2);
-console.log(pending(tasks)); // only "Посмотреть запись урока" is left
+console.log(pending(tasks)); // tasks 3, 4, 5 and "Посмотреть запись урока" are left
