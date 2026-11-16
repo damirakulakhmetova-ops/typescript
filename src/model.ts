@@ -31,8 +31,22 @@ function getConversionRate(list: Lead[]): number {
   if (list.length === 0) {
     return 0;
   }
-  const paidCount = list.filter((lead) => lead.status === "paid").length;
-  return Math.round((paidCount / list.length) * 100);
+  const paidCount = list.filter((lead) => lead.status === "paid").length; //проходится по списку и считает тех со статусом paid
+  return Math.round((paidCount / list.length) * 100); //окгруляет это число до 100, чтобы показать в процентах
 }
 
 console.log("Конверсия в оплату, %:", getConversionRate(leads)); // 33
+
+// Заявки, которым менеджер должен написать повторно:
+// всё ещё в работе (не оплачены и не в отказе) и созданы больше 3 дней назад
+function getLeadsToFollowUp(list: Lead[], today: Date = new Date()): Lead[] {
+  const dayMs = 24 * 60 * 60 * 1000;
+  return list.filter((lead) => {
+    const inProgress = lead.status !== "paid" && lead.status !== "lost";
+    const ageDays = (today.getTime() - new Date(lead.createdAt).getTime()) / dayMs;
+    return inProgress && ageDays > 3;
+  });
+}
+
+// прогноз: выведутся Данияр и Мадина. Оба ещё не оплатили и не отказались, и с их заявок прошло больше 3 дней (8 и 4 дня). Айгерим не попадёт, она уже оплатила.
+console.log("Написать повторно:", getLeadsToFollowUp(leads)); 
