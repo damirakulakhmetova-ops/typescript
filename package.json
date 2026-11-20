@@ -13,7 +13,8 @@
     "flights": "tsx src/flights.ts",
     "flights-bugs": "tsx src/flights-bugs.ts",
     "my": "tsx src/my.ts",
-    "model": "tsx src/model.ts"
+    "model": "tsx src/model.ts",
+    "weather-currency": "tsx src/weather-currency.ts"
   },
   "keywords": [],
   "author": "",
