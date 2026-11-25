@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Погода и курс</title>
+<style>
+  :root {
+    --bg: #eef3f8; --card: #ffffff; --text: #1d2733; --muted: #66758a;
+    --accent: #2f6fdf; --error: #c0392b; --border: #d7e0ea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #11161d; --card: #1b222c; --text: #e6edf5; --muted: #95a3b6;
+      --accent: #6ea2ff; --error: #ff7b6b; --border: #2b3542;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex; justify-content: center; padding: 48px 16px;
+  }
+  main { width: 100%; max-width: 420px; }
+  h1 { font-size: 22px; margin: 0 0 16px; }
+  form { display: flex; gap: 8px; }
+  input {
+    flex: 1; min-width: 0; padding: 10px 12px; font: inherit; color: var(--text);
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  }
+  button {
+    padding: 10px 16px; font: inherit; border: 0; border-radius: 8px;
+    background: var(--accent); color: #fff; cursor: pointer;
+  }
+  button:disabled { opacity: .6; cursor: default; }
+  .card {
+    margin-top: 20px; padding: 20px; background: var(--card);
+    border: 1px solid var(--border); border-radius: 12px;
+  }
+  .place { color: var(--muted); }
+  .temp { font-size: 56px; font-weight: 600; line-height: 1.1; margin: 8px 0; }
+  .sky { font-size: 18px; margin-bottom: 12px; }
+  dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 0; }
+  dt { color: var(--muted); }
+  dd { margin: 0; }
+  h2 { font-size: 15px; font-weight: 600; color: var(--muted); margin: 0 0 10px; }
+  .rates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .rate { text-align: center; }
+  .rate b { display: block; font-size: 20px; }
+  .rate span { color: var(--muted); font-size: 13px; }
+  .error { color: var(--error); }
+  .error b { display: block; margin-bottom: 4px; }
+  .muted { color: var(--muted); font-size: 13px; margin-top: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Погода и курс валют</h1>
+  <form id="form">
+    <input id="city" value="Алматы" placeholder="Город" autocomplete="off">
+    <button id="btn">Показать</button>
+  </form>
+  <div id="out"></div>
+</main>
+
+<script>
+  // Адрес нашего Cloudflare Worker
+  const WORKER_URL = "https://my-worker.kulakhmetova.workers.dev";
+
+  // Коды погоды Open-Meteo → описание
+  const SKY = {
+    0: "☀️ Ясно", 1: "🌤 Преимущественно ясно", 2: "⛅ Переменная облачность", 3: "☁️ Пасмурно",
+    45: "🌫 Туман", 48: "🌫 Изморозь", 51: "🌦 Слабая морось", 53: "🌦 Морось", 55: "🌧 Сильная морось",
+    61: "🌧 Небольшой дождь", 63: "🌧 Дождь", 65: "🌧 Сильный дождь",
+    66: "🌧 Ледяной дождь", 67: "🌧 Сильный ледяной дождь",
+    71: "🌨 Небольшой снег", 73: "🌨 Снег", 75: "❄️ Сильный снег", 77: "🌨 Снежная крупа",
+    80: "🌦 Ливень", 81: "🌧 Ливни", 82: "⛈ Сильные ливни",
+    85: "🌨 Снегопад", 86: "❄️ Сильный снегопад",
+    95: "⛈ Гроза", 96: "⛈ Гроза с градом", 99: "⛈ Сильная гроза с градом",
+  };
+
+  const form = document.getElementById("form");
+  const input = document.getElementById("city");
+  const btn = document.getElementById("btn");
+  const out = document.getElementById("out");
+
+  async function load(city) {
+    btn.disabled = true;
+    out.innerHTML = '<div class="card muted">⏳ Загружаю погоду и курс…</div>';
+    try {
+      let res;
+      try {
+        res = await fetch(`${WORKER_URL}/weather?city=${encodeURIComponent(city)}`);
+      } catch {
+        // fetch падает сам, только если до сервера вообще не достучались
+        throw new Error("Нет связи с сервером. Проверьте интернет и попробуйте ещё раз.");
+      }
+      const data = await res.json().catch(() => ({})); // вдруг ответ не JSON
+      if (res.status === 404) throw new Error(`Город «${city}» не найден. Проверьте название.`);
+      if (!res.ok) throw new Error(`Сервис погоды или курса сейчас не отвечает (${data.error || "ошибка " + res.status}). Попробуйте позже.`);
+      render(data);
+    } catch (err) {
+      out.innerHTML = "";
+      const div = document.createElement("div");
+      div.className = "card error";
+      const title = document.createElement("b");
+      title.textContent = "😕 Не получилось загрузить данные";
+      div.append(title, err.message);
+      out.append(div);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function render({ weather: w, rates: r }) {
+    const time = new Date(w.time).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+    const kzt = (x) => x.toFixed(2).replace(".", ",") + " ₸";
+    out.innerHTML = `
+      <div class="card">
+        <div class="place"></div>
+        <div class="temp">${Math.round(w.temperature)}°</div>
+        <div class="sky">${SKY[w.code] ?? "Код погоды " + w.code}</div>
+        <dl>
+          <dt>Ощущается</dt><dd>${Math.round(w.feelsLike)}°</dd>
+          <dt>Влажность</dt><dd>${w.humidity}%</dd>
+          <dt>Ветер</dt><dd>${w.wind} м/с</dd>
+        </dl>
+        <div class="muted">Обновлено в ${time} (местное время города)</div>
+      </div>
+      <div class="card">
+        <h2>💱 Курс валют</h2>
+        <div class="rates">
+          <div class="rate"><b>${kzt(r.USD)}</b><span>1 USD</span></div>
+          <div class="rate"><b>${kzt(r.EUR)}</b><span>1 EUR</span></div>
+          <div class="rate"><b>${kzt(r.RUB)}</b><span>1 RUB</span></div>
+        </div>
+      </div>`;
+    out.querySelector(".place").textContent = `${w.city}, ${w.country}`;
+  }
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const city = input.value.trim();
+    if (city) load(city);
+  });
+
+  load(input.value);
+</script>
+</body>
+</html>
